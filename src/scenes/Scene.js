@@ -18,6 +18,9 @@ export default class Scene extends Phaser.Scene
         this.load.image('first', 'images/Grocup_3.png')
         this.load.image('second', 'images/Group_3.png')
         this.load.image('third', 'images/Grouph_3.png')
+
+        this.load.image('firstWin', 'images/one.png')
+        this.load.image('secondWin', 'images/two.png')
     }
 
 
@@ -36,29 +39,37 @@ export default class Scene extends Phaser.Scene
     aiCount = "none"; // one, two, none
 
     playerOne = true;
+    firstWin;
 
     CreateGame()
     {
+
+        this.add.image(this.scale.baseSize.width/2 - 25, this.scale.baseSize.height/2, 'bg')
 
         var buttonOne = this.add.image(this.scale.baseSize.width/2 - 200, 35, 'first').setScale(0.5).setInteractive({ useHandCursor: true })
 
         buttonOne.on('pointerdown', () => {
            this.aiCount = 'none';
+           this.firstWin.setAlpha(0);
+           this.secondWin.setAlpha(0);
            this.ResetMap();
         })
 
         var buttonTwo = this.add.image(this.scale.baseSize.width/2, 35, 'second').setScale(0.5).setInteractive({ useHandCursor: true })
         buttonTwo.on('pointerdown', () => {
             this.aiCount = 'one';
+            this.firstWin.setAlpha(0);
+            this.secondWin.setAlpha(0);
             this.ResetMap();
          })
         var buttonThree = this.add.image(this.scale.baseSize.width/2 + 200, 35, 'third').setScale(0.5).setInteractive({ useHandCursor: true })
         buttonThree.on('pointerdown', () => {
             this.aiCount = 'two';
+            this.firstWin.setAlpha(0);
+            this.secondWin.setAlpha(0);
             this.ResetMap();
             this.AiMove();
-         })
-
+         }) 
 
         this.map = Array.from(Array(this.mapX), () => new Array(this.mapY));
 
@@ -88,13 +99,22 @@ export default class Scene extends Phaser.Scene
                 this.map[j][i] = sprite;
             }
         }
+
+        this.firstWin = this.add.image(this.scale.baseSize.width/2, this.scale.baseSize.height/2, 'firstWin');
+        this.firstWin.setAlpha(0);
+        this.secondWin = this.add.image(this.scale.baseSize.width/2, this.scale.baseSize.height/2, 'secondWin');
+        this.secondWin.setAlpha(0);
+
     }
 
 
     ResetMap()
     {
+        this.firstWin.setAlpha(0);
+        this.secondWin.setAlpha(0);
         this.gamesCount++;
         clearTimeout(this.move);
+        this.playerOne = true;
         for(let i = 0; i < this.mapY; i++)
         {
             for(let j = 0; j < this.mapX; j++)
@@ -119,9 +139,13 @@ export default class Scene extends Phaser.Scene
         let choises = this.CheckHowManyMovesPossible(this.playerOne)
         this.choicesCout += choises
         if(choises == 0) {
-            console.log((this.playerOne ? "Player One" : "Player Two") + " lost");
-            console.log(this.moveCount + " " + this.choicesCout + " " + this.gamesCount);
-            this.ResetMap();
+            //console.log((this.playerOne ? "Player One" : "Player Two") + " lost");
+            //console.log(this.moveCount + " " + this.choicesCout + " " + this.gamesCount);
+            if(this.playerOne) this.secondWin.setAlpha(1);
+            else this.firstWin.setAlpha(1);
+            
+            return;
+            //this.ResetMap();
         }
         if(this.aiCount === "one" && !this.playerOne) this.move = setTimeout(() => this.AiMove(), 100);
         else if(this.aiCount === "two") this.move = setTimeout(() => this.AiMove(), 100);
