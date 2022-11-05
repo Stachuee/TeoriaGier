@@ -82,7 +82,7 @@ export default class Scene extends Phaser.Scene
                 sprite.setScale(0.5)
                 .setInteractive({ useHandCursor: true })
                 .on('pointerdown', () => {
-                    if((this.aiCount === "one" && this.playerOne || this.aiCount === "none") && this.CheckIfCanPlace(this.playerOne, j, i)) 
+                    if((this.aiCount === "one" && this.playerOne || this.aiCount === "none") && this.CheckIfCanPlace(this.playerOne, this.map, j, i)) 
                     {
                         this.PlaceBlock(this.playerOne, j, i);
                         this.map[j][i].tint = 0xFFFFFF;
@@ -90,7 +90,7 @@ export default class Scene extends Phaser.Scene
                     }
                 })
                 .on('pointerover', () => {
-                    if(this.CheckIfCanPlace(this.playerOne, j, i)) this.map[j][i].tint = 0x696969
+                    if(this.CheckIfCanPlace(this.playerOne, this.map, j, i)) this.map[j][i].tint = 0x696969
                 })
                 .on('pointerout', () => {
                     this.map[j][i].tint = 0xFFFFFF
@@ -136,7 +136,7 @@ export default class Scene extends Phaser.Scene
     {
         this.playerOne = !this.playerOne; // change player
         this.moveCount++;
-        let choises = this.CheckHowManyMovesPossible(this.playerOne)
+        let choises = this.CheckHowManyMovesPossible(this.playerOne, this.map)
         this.choicesCout += choises
         if(choises == 0) {
             //console.log((this.playerOne ? "Player One" : "Player Two") + " lost");
@@ -147,54 +147,175 @@ export default class Scene extends Phaser.Scene
             return;
             //this.ResetMap();
         }
-        if(this.aiCount === "one" && !this.playerOne) this.move = setTimeout(() => this.AiMove(), 100);
-        else if(this.aiCount === "two") this.move = setTimeout(() => this.AiMove(), 100);
+        if(this.aiCount === "one" && !this.playerOne) this.move = setTimeout(() => this.AiMove("minMax"), 1);
+        else if(this.aiCount === "two")
+        {
+            if(this.playerOne)  this.move = setTimeout(() => this.AiMove("minMax"), 1);
+            else  this.move = setTimeout(() => this.AiMove(), 1);
+        }
     }
 
-    AiMove()
+    minMaxDepth = 2;
+
+    AiMove(algorithm = "random")
     { 
         let x;
         let y;
-        do {
-            x = Phaser.Math.Between(0, this.mapX - 1);
-            y = Phaser.Math.Between(0, this.mapY - 1); 
-        
-        } while(!this.CheckIfCanPlace(this.playerOne, x, y))
+        switch(algorithm)
+        {
+            case "minMax":
+                let copy = this.CopyBoard(this.map);
+                let move = this.CheckBoard(copy, this.playerOne, this.minMaxDepth)
+                x = move.cordinates.x
+                y = move.cordinates.y       
+                break;
+            case "random":
+                do {
+                    x = Phaser.Math.Between(0, this.mapX - 1);
+                    y = Phaser.Math.Between(0, this.mapY - 1); 
+                } while(!this.CheckIfCanPlace(this.playerOne, this.map, x, y))
+                break;
+        }
         this.PlaceBlock(this.playerOne, x, y);
         this.PlayerSwap();
+    }   
+
+    CopyBoard(board)
+    {
+        let mapCopy = Array.from(Array(this.mapX), () => new Array(this.mapY));
+        for(let x = 0; x < this.mapX; x++)
+        {
+            for(let y = 0; y < this.mapY; y++)
+            {
+                mapCopy[x][y] = [];
+                mapCopy[x][y]["isFilled"] = board[x][y].isFilled;
+            }   
+        }
+        return mapCopy;
     }
 
-    CheckHowManyMovesPossible(vertical)
+    CheckBoard(board, vertical, depthRemain, sign = true) // sign - true = +, sign - false = -
+    {
+        let moves = []
+        let minMaxValue = sign ? Number.MIN_SAFE_INTEGER : Number.MAX_SAFE_INTEGER
+        let nexIndex = 0
+
+        for(let x = 0; x < this.mapX; x++)
+        {
+            for(let y = 0; y < this.mapY; y++)
+            {
+                if(this.CheckIfCanPlace(vertical, board, x, y))
+                {
+                    this.MarkSpot(board, vertical, x, y)
+                    if(depthRemain > 0) 
+                    {
+                        let result = this.CheckBoard(board, !vertical, depthRemain - 1, !sign)
+                        
+                        if((sign && result.minMaxValue > minMaxValue) || (!sign && result.minMaxValue < minMaxValue))
+                        {
+                            nexIndex = 0
+                            minMaxValue = result.minMaxValue
+                            moves = []
+                            moves[nexIndex] = {x, y}
+                            nexIndex++
+                        }
+                        else if(result.minMaxValue === minMaxValue)
+                        {
+                            moves[nexIndex] = {x, y}
+                            nexIndex++
+                        }
+                    }
+                    else
+                    {
+                        let score = this.EvalGameState(board, vertical)
+                        
+                        if((sign && score > minMaxValue) || (!sign && score < minMaxValue))
+                        {
+                            nexIndex = 0
+                            minMaxValue = score
+                            moves = []
+                            moves[nexIndex] = {x, y}
+                            nexIndex++
+                        }
+                        else if(score === minMaxValue)
+                        {
+                            moves[nexIndex] = {x, y}
+                            nexIndex++
+                        }
+                    }
+                    
+                    this.UnMarkSpot(board, vertical, x, y)
+                }
+            }   
+        }
+        return {cordinates: moves[Math.floor(Math.random()*moves.length)], minMaxValue}
+    }
+
+    MarkSpot(board, vertical, x, y)
+    {
+        board[x][y].isFilled = true
+        if(vertical)
+        {
+            board[x][y + 1].isFilled= true
+        }
+        else
+        {
+            board[x + 1][y].isFilled = true
+        }
+    }
+
+    UnMarkSpot(board, vertical, x, y)
+    {
+        board[x][y].isFilled = false
+        if(vertical)
+        {
+            board[x][y + 1].isFilled= false
+        }
+        else
+        {
+            board[x + 1][y].isFilled = false
+        }
+    }
+
+
+    EvalGameState(board, vertical)
+    {
+        let oponentMoves = this.CheckHowManyMovesPossible(!vertical, board)
+        if(oponentMoves === 0) return Number.MAX_SAFE_INTEGER
+        else return this.CheckHowManyMovesPossible(vertical, board) - oponentMoves;
+    }
+
+    CheckHowManyMovesPossible(vertical, map)
     {
         let numberOfAvalibleMoves = 0;
         for(let i = 0; i < this.mapY; i++)
         {
             for(let j = 0; j < this.mapX; j++)
             {
-                if(!this.map[j][i].isFilled && this.CheckIfCanPlace(vertical, j, i)) numberOfAvalibleMoves++;
+                if(!map[j][i].isFilled && this.CheckIfCanPlace(vertical, map, j, i)) numberOfAvalibleMoves++;
             }
         }
         return numberOfAvalibleMoves;
     }
 
 
-    CheckIfCanPlace(vertical, x, y)
+    CheckIfCanPlace(vertical, map, x, y)
     {
         if(vertical)
         {
-            if(this.map[x][y].isFilled === false && y < this.mapY - 1 && this.map[x][y + 1].isFilled === false) return true;
+            if(map[x][y].isFilled === false && y < this.mapY - 1 && map[x][y + 1].isFilled === false) return true;
             return false;
         }
         else
         {
-            if(this.map[x][y].isFilled === false && x < this.mapX - 1 && this.map[x + 1][y].isFilled === false) return true;
+            if(map[x][y].isFilled === false && x < this.mapX - 1 && map[x + 1][y].isFilled === false) return true;
             return false;
         }
     }
 
     PlaceBlock(vertical, x, y)
     {
-        if(this.CheckIfCanPlace(vertical, x, y))
+        if(this.CheckIfCanPlace(vertical, this.map, x, y))
         {
             this.map[x][y].isFilled = true
             this.map[x][y].setTexture(vertical ? 'playerOne' : 'playerTwo')
