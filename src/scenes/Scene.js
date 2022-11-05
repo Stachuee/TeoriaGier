@@ -199,7 +199,7 @@ export default class Scene extends Phaser.Scene
         let moves = []
         let minMaxValue = sign ? Number.MIN_SAFE_INTEGER : Number.MAX_SAFE_INTEGER
         let nexIndex = 0
-
+        
         for(let x = 0; x < this.mapX; x++)
         {
             for(let y = 0; y < this.mapY; y++)
@@ -207,41 +207,28 @@ export default class Scene extends Phaser.Scene
                 if(this.CheckIfCanPlace(vertical, board, x, y))
                 {
                     this.MarkSpot(board, vertical, x, y)
-                    if(depthRemain > 0) 
+                    let score
+                    if(depthRemain > 0)
                     {
-                        let result = this.CheckBoard(board, !vertical, depthRemain - 1, !sign)
-                        
-                        if((sign && result.minMaxValue > minMaxValue) || (!sign && result.minMaxValue < minMaxValue))
-                        {
-                            nexIndex = 0
-                            minMaxValue = result.minMaxValue
-                            moves = []
-                            moves[nexIndex] = {x, y}
-                            nexIndex++
-                        }
-                        else if(result.minMaxValue === minMaxValue)
-                        {
-                            moves[nexIndex] = {x, y}
-                            nexIndex++
-                        }
+                        score = this.CheckBoard(board, !vertical, depthRemain - 1, !sign).minMaxValue
                     }
                     else
                     {
-                        let score = this.EvalGameState(board, vertical)
-                        
-                        if((sign && score > minMaxValue) || (!sign && score < minMaxValue))
-                        {
-                            nexIndex = 0
-                            minMaxValue = score
-                            moves = []
-                            moves[nexIndex] = {x, y}
-                            nexIndex++
-                        }
-                        else if(score === minMaxValue)
-                        {
-                            moves[nexIndex] = {x, y}
-                            nexIndex++
-                        }
+                        score = this.EvalGameState(board, vertical)
+                    }
+
+                    if((sign && score > minMaxValue) || (!sign && score < minMaxValue))
+                    {
+                        nexIndex = 0
+                        minMaxValue = score
+                        moves = []
+                        moves[nexIndex] = {x, y}
+                        nexIndex++
+                    }
+                    else if(score === minMaxValue)
+                    {
+                        moves[nexIndex] = {x, y}
+                        nexIndex++
                     }
                     
                     this.UnMarkSpot(board, vertical, x, y)
