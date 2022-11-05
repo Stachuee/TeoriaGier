@@ -279,7 +279,7 @@ export default class Scene extends Phaser.Scene
         {
             for(let j = 0; j < this.mapX; j++)
             {
-                if(!map[j][i].isFilled && this.CheckIfCanPlace(vertical, map, j, i)) numberOfAvalibleMoves++;
+                if(this.CheckIfCanPlace(vertical, map, j, i)) numberOfAvalibleMoves++;
             }
         }
         return numberOfAvalibleMoves;
@@ -290,12 +290,12 @@ export default class Scene extends Phaser.Scene
     {
         if(vertical)
         {
-            if(map[x][y].isFilled === false && y < this.mapY - 1 && map[x][y + 1].isFilled === false) return true;
+            if(!map[x][y].isFilled&& y < this.mapY - 1 && !map[x][y + 1].isFilled) return true;
             return false;
         }
         else
         {
-            if(map[x][y].isFilled === false && x < this.mapX - 1 && map[x + 1][y].isFilled === false) return true;
+            if(!map[x][y].isFilled&& x < this.mapX - 1 && !map[x + 1][y].isFilled) return true;
             return false;
         }
     }
@@ -308,7 +308,7 @@ export default class Scene extends Phaser.Scene
             this.map[x][y].setTexture(vertical ? 'playerOne' : 'playerTwo')
             if(vertical)
             {
-                this.map[x][y + 1].isFilled= true
+                this.map[x][y + 1].isFilled = true
                 this.map[x][y + 1].setTexture(vertical ? 'playerOne' : 'playerTwo')
             }
             else
