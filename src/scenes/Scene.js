@@ -19,6 +19,17 @@ export default class Scene extends Phaser.Scene
         this.load.image('second', 'images/Group_3.png')
         this.load.image('third', 'images/Grouph_3.png')
 
+        this.load.image('minmax', 'images/MinMax.png')
+        this.load.image('negamax', 'images/NegaMax.png')
+        this.load.image('alfabeta', 'images/AlfaBeta.png')
+        this.load.image('random', 'images/Random.png')
+        
+        this.load.image('gl0', 'images/Gl0.png')
+        this.load.image('gl1', 'images/Gl1.png')
+        this.load.image('gl2', 'images/Gl2.png')
+
+        this.load.image('start', 'images/Start.png')
+
         this.load.image('firstWin', 'images/one.png')
         this.load.image('secondWin', 'images/two.png')
     }
@@ -27,6 +38,8 @@ export default class Scene extends Phaser.Scene
 
     create()
     {
+        this.SetBg();
+        this.SetUI();
         this.CreateGame();
     }
 
@@ -41,35 +54,103 @@ export default class Scene extends Phaser.Scene
     playerOne = true;
     firstWin;
 
-    CreateGame()
+    SetBg()
+    {
+        this.add.image(this.scale.baseSize.width/2 - 25, this.scale.baseSize.height/2, 'bg')
+    }
+
+    chosenAlgorithm = [0, 0]
+    chosenDepths = [0, 0]
+    algorithms = ["minmax", "negamax", "random"]
+    depths = ["gl0", "gl1", "gl2"]
+    gameStarted = false
+    
+    SetUI()
     {
 
-        this.add.image(this.scale.baseSize.width/2 - 25, this.scale.baseSize.height/2, 'bg')
+        let buttonAlgorithmOne = this.add.image(this.scale.baseSize.width/2- 200, 75, 'minmax').setScale(0.5).setInteractive({ useHandCursor: true }).setVisible(false)       
+        buttonAlgorithmOne.on('pointerdown', () => {
+            if(this.gameStarted) return
+            if(this.chosenAlgorithm[0] < this.algorithms.length - 1) this.chosenAlgorithm[0]++
+            else this.chosenAlgorithm[0] = 0
+            buttonAlgorithmOne.setTexture(this.algorithms[this.chosenAlgorithm[0]])
+        })
+        let buttonDepthOne = this.add.image(this.scale.baseSize.width/2- 200, 105, 'gl0').setScale(0.5).setInteractive({ useHandCursor: true }).setVisible(false)
+        buttonDepthOne.on('pointerdown', () => {
+            if(this.gameStarted) return
+            if(this.chosenDepths[0] < this.depths.length - 1) this.chosenDepths[0]++
+            else this.chosenDepths[0] = 0
+            buttonDepthOne.setTexture(this.depths[this.chosenDepths[0]])
+        })
 
-        var buttonOne = this.add.image(this.scale.baseSize.width/2 - 200, 35, 'first').setScale(0.5).setInteractive({ useHandCursor: true })
 
+        let buttonAlgorithmTwo = this.add.image(this.scale.baseSize.width/2 + 200, 75, 'minmax').setScale(0.5).setInteractive({ useHandCursor: true }).setVisible(false)
+        buttonAlgorithmTwo.on('pointerdown', () => {
+            if(this.gameStarted) return
+            if(this.chosenAlgorithm[1] < this.algorithms.length - 1) this.chosenAlgorithm[1]++
+            else this.chosenAlgorithm[1] = 0
+            buttonAlgorithmTwo.setTexture(this.algorithms[this.chosenAlgorithm[1]])
+        })
+        
+        let buttonDepthTwo = this.add.image(this.scale.baseSize.width/2 + 200, 105, 'gl0').setScale(0.5).setInteractive({ useHandCursor: true }).setVisible(false)
+
+        buttonDepthTwo.on('pointerdown', () => {
+            if(this.gameStarted) return
+            if(this.chosenDepths[1] < this.depths.length - 1) this.chosenDepths[1]++
+            else this.chosenDepths[1] = 0
+            buttonDepthTwo.setTexture(this.depths[this.chosenDepths[1]])
+        })
+
+        let buttonStart = this.add.image(this.scale.baseSize.width/2, 105, 'start').setScale(0.5).setInteractive({ useHandCursor: true })
+        buttonStart.on('pointerdown', () => {
+            this.firstWin.setAlpha(0);
+            this.secondWin.setAlpha(0);
+            this.ResetMap();
+            this.gameStarted = true;
+            if(this.aiCount === "two") this.AiMove();
+         })
+
+        let buttonOne = this.add.image(this.scale.baseSize.width/2 - 200, 35, 'first').setScale(0.5).setInteractive({ useHandCursor: true })
         buttonOne.on('pointerdown', () => {
            this.aiCount = 'none';
+           buttonAlgorithmOne.setVisible(false)
+           buttonDepthOne.setVisible(false)
+           buttonAlgorithmTwo.setVisible(false)
+           buttonDepthTwo.setVisible(false)
            this.firstWin.setAlpha(0);
            this.secondWin.setAlpha(0);
            this.ResetMap();
+           this.gameStarted = false
         })
 
-        var buttonTwo = this.add.image(this.scale.baseSize.width/2, 35, 'second').setScale(0.5).setInteractive({ useHandCursor: true })
+        let buttonTwo = this.add.image(this.scale.baseSize.width/2, 35, 'second').setScale(0.5).setInteractive({ useHandCursor: true })
         buttonTwo.on('pointerdown', () => {
             this.aiCount = 'one';
+            buttonAlgorithmOne.setVisible(false)
+            buttonDepthOne.setVisible(false)
+            buttonAlgorithmTwo.setVisible(true)
+            buttonDepthTwo.setVisible(true)
             this.firstWin.setAlpha(0);
             this.secondWin.setAlpha(0);
             this.ResetMap();
+            this.gameStarted = false
          })
-        var buttonThree = this.add.image(this.scale.baseSize.width/2 + 200, 35, 'third').setScale(0.5).setInteractive({ useHandCursor: true })
+        let buttonThree = this.add.image(this.scale.baseSize.width/2 + 200, 35, 'third').setScale(0.5).setInteractive({ useHandCursor: true })
         buttonThree.on('pointerdown', () => {
             this.aiCount = 'two';
+            buttonAlgorithmOne.setVisible(true)
+            buttonDepthOne.setVisible(true)
+            buttonAlgorithmTwo.setVisible(true)
+            buttonDepthTwo.setVisible(true)
             this.firstWin.setAlpha(0);
             this.secondWin.setAlpha(0);
             this.ResetMap();
-            this.AiMove();
+            this.gameStarted = false
          }) 
+    }
+
+    CreateGame()
+    {
 
         this.map = Array.from(Array(this.mapX), () => new Array(this.mapY));
 
@@ -77,12 +158,12 @@ export default class Scene extends Phaser.Scene
         {
             for(let j = 0; j < this.mapX; j++)
             {
-                var sprite = this.add.image(50 * j + this.scale.baseSize.width/2 - this.mapX/2 * 50 + 25, 50 * i + 125, 'empty')
+                var sprite = this.add.image(50 * j + this.scale.baseSize.width/2 - this.mapX/2 * 50 + 25, 50 * i + 150, 'empty')
 
                 sprite.setScale(0.5)
                 .setInteractive({ useHandCursor: true })
                 .on('pointerdown', () => {
-                    if((this.aiCount === "one" && this.playerOne || this.aiCount === "none") && this.CheckIfCanPlace(this.playerOne, this.map, j, i)) 
+                    if((this.gameStarted && (this.aiCount === "one" && this.playerOne || this.aiCount === "none")) && this.CheckIfCanPlace(this.playerOne, this.map, j, i)) 
                     {
                         this.PlaceBlock(this.playerOne, j, i);
                         this.map[j][i].tint = 0xFFFFFF;
@@ -139,36 +220,41 @@ export default class Scene extends Phaser.Scene
         let choises = this.CheckHowManyMovesPossible(this.playerOne, this.map)
         this.choicesCout += choises
         if(choises == 0) {
-            //console.log((this.playerOne ? "Player One" : "Player Two") + " lost");
-            //console.log(this.moveCount + " " + this.choicesCout + " " + this.gamesCount);
             if(this.playerOne) this.secondWin.setAlpha(1);
             else this.firstWin.setAlpha(1);
-            
+            this.gameStarted = false
             return;
-            //this.ResetMap();
         }
-        if(this.aiCount === "one" && !this.playerOne) this.move = setTimeout(() => this.AiMove("minMax"), 1);
+        if(this.aiCount === "one" && !this.playerOne) this.move = setTimeout(() => this.AiMove(this.algorithms[this.chosenAlgorithm[1]], this.chosenDepths[1]), 1);
         else if(this.aiCount === "two")
         {
-            if(this.playerOne)  this.move = setTimeout(() => this.AiMove("minMax"), 1);
-            else  this.move = setTimeout(() => this.AiMove(), 1);
+            if(this.playerOne)  this.move = setTimeout(() => this.AiMove(this.algorithms[this.chosenAlgorithm[0]], this.chosenDepths[0]), 1);
+            else  this.move = setTimeout(() => this.AiMove(this.algorithms[this.chosenAlgorithm[1]], this.chosenDepths[1]), 1);
         }
     }
 
     minMaxDepth = 2;
 
-    AiMove(algorithm = "random")
+    AiMove(algorithm = "random", depth = 0)
     { 
         let x;
         let y;
+        let copy;
+        let move;
         switch(algorithm)
         {
-            case "minMax":
-                let copy = this.CopyBoard(this.map);
-                let move = this.CheckBoard(copy, this.playerOne, this.minMaxDepth)
+            case "minmax":
+                copy = this.CopyBoard(this.map);
+                move = this.MinMax(copy, this.playerOne, depth)
                 x = move.cordinates.x
                 y = move.cordinates.y       
                 break;
+            case "negamax":
+                copy = this.CopyBoard(this.map);
+                move = this.NegaMax(copy, this.playerOne, depth)
+                x = move.cordinates.x
+                y = move.cordinates.y       
+            break;
             case "random":
                 do {
                     x = Phaser.Math.Between(0, this.mapX - 1);
@@ -194,7 +280,7 @@ export default class Scene extends Phaser.Scene
         return mapCopy;
     }
 
-    CheckBoard(board, vertical, depthRemain, sign = true) // sign - true = +, sign - false = -
+    MinMax(board, vertical, depthRemain, sign = true) // sign - true = +, sign - false = -
     {
         let moves = []
         let minMaxValue = sign ? Number.MIN_SAFE_INTEGER : Number.MAX_SAFE_INTEGER
@@ -210,7 +296,7 @@ export default class Scene extends Phaser.Scene
                     let score
                     if(depthRemain > 0)
                     {
-                        score = this.CheckBoard(board, !vertical, depthRemain - 1, !sign).minMaxValue
+                        score = this.MinMax(board, !vertical, depthRemain - 1, !sign).minMaxValue
                     }
                     else
                     {
@@ -236,6 +322,51 @@ export default class Scene extends Phaser.Scene
             }   
         }
         return {cordinates: moves[Math.floor(Math.random()*moves.length)], minMaxValue}
+    }
+
+
+    NegaMax(board, vertical, depthRemain, sign = true) // sign - true = +, sign - false = -
+    {
+        let moves = []
+        let maxValue = Number.MIN_SAFE_INTEGER
+        let nexIndex = 0
+        
+        for(let x = 0; x < this.mapX; x++)
+        {
+            for(let y = 0; y < this.mapY; y++)
+            {
+                if(this.CheckIfCanPlace(vertical, board, x, y))
+                {
+                    this.MarkSpot(board, vertical, x, y)
+                    let score
+                    if(depthRemain > 0)
+                    {
+                        score = this.NegaMax(board, !vertical, depthRemain - 1, !sign).maxValue
+                    }
+                    else
+                    {
+                        score = this.EvalGameState(board, vertical) * (sign ? 1 : -1 )
+                    }
+
+                    if(score > maxValue)
+                    {
+                        nexIndex = 0
+                        maxValue = score
+                        moves = []
+                        moves[nexIndex] = {x, y}
+                        nexIndex++
+                    }
+                    else if(score === maxValue)
+                    {
+                        moves[nexIndex] = {x, y}
+                        nexIndex++
+                    }
+                    
+                    this.UnMarkSpot(board, vertical, x, y)
+                }
+            }   
+        }
+        return {cordinates: moves[Math.floor(Math.random()*moves.length)], maxValue : -maxValue}
     }
 
     MarkSpot(board, vertical, x, y)
