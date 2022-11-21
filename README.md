@@ -1,3 +1,3 @@
 Uruchamianie projektu
 1. npm install
-2. npm run
+2. npm run start
