@@ -9,7 +9,7 @@ export default class Scene extends Phaser.Scene
 
 	preload()
     {
-        this.load.image('bg', 'images/bg.png')
+        this.load.image('bg', 'images/bg1.png')
         this.load.image('empty', 'images/Frame_1.png')
 
         this.load.image('playerOne', 'images/Frame_2.png')
@@ -29,6 +29,7 @@ export default class Scene extends Phaser.Scene
         this.load.image('gl2', 'images/Gl2.png')
 
         this.load.image('start', 'images/Start.png')
+        this.load.image('reset', 'images/Reset.png')
 
         this.load.image('firstWin', 'images/one.png')
         this.load.image('secondWin', 'images/two.png')
@@ -107,6 +108,7 @@ export default class Scene extends Phaser.Scene
             this.secondWin.setAlpha(0);
             this.ResetMap();
             this.gameStarted = true;
+            buttonStart.setTexture("reset");
             if(this.aiCount === "two") this.AiMove();
          })
 
@@ -117,6 +119,7 @@ export default class Scene extends Phaser.Scene
            buttonDepthOne.setVisible(false)
            buttonAlgorithmTwo.setVisible(false)
            buttonDepthTwo.setVisible(false)
+           buttonStart.setTexture("start");
            this.firstWin.setAlpha(0);
            this.secondWin.setAlpha(0);
            this.ResetMap();
@@ -130,6 +133,7 @@ export default class Scene extends Phaser.Scene
             buttonDepthOne.setVisible(false)
             buttonAlgorithmTwo.setVisible(true)
             buttonDepthTwo.setVisible(true)
+            buttonStart.setTexture("start");
             this.firstWin.setAlpha(0);
             this.secondWin.setAlpha(0);
             this.ResetMap();
@@ -142,6 +146,7 @@ export default class Scene extends Phaser.Scene
             buttonDepthOne.setVisible(true)
             buttonAlgorithmTwo.setVisible(true)
             buttonDepthTwo.setVisible(true)
+            buttonStart.setTexture("start");
             this.firstWin.setAlpha(0);
             this.secondWin.setAlpha(0);
             this.ResetMap();
