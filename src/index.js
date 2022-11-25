@@ -1,41 +1,40 @@
-import Phaser from 'phaser'
+import Phaser from 'phaser';
+//import logoImg from './assets/logo.png';
 
-export default class Scene extends Phaser.Scene
+class MyGame extends Phaser.Scene
 {
-	constructor()
-	{
-		super('Game')
-	}
-
-	preload()
+    constructor ()
     {
-        this.load.image('bg', 'images/bg1.png')
-        this.load.image('empty', 'images/Frame_1.png')
-
-        this.load.image('playerOne', 'images/Frame_2.png')
-        this.load.image('playerTwo', 'images/Frame_3.png')
-        
-        this.load.image('first', 'images/Grocup_3.png')
-        this.load.image('second', 'images/Group_3.png')
-        this.load.image('third', 'images/Grouph_3.png')
-
-        this.load.image('minmax', 'images/MinMax.png')
-        this.load.image('negamax', 'images/NegaMax.png')
-        this.load.image('alfabeta', 'images/AlfaBeta.png')
-        this.load.image('random', 'images/Random.png')
-        
-        this.load.image('gl0', 'images/Gl0.png')
-        this.load.image('gl1', 'images/Gl1.png')
-        this.load.image('gl2', 'images/Gl2.png')
-
-        this.load.image('start', 'images/Start.png')
-        this.load.image('reset', 'images/Reset.png')
-
-        this.load.image('firstWin', 'images/one.png')
-        this.load.image('secondWin', 'images/two.png')
+        super();
     }
 
+    preload()
+    {
+        this.load.image('bg', './public/images/bg1.png')
+        this.load.image('empty', './public/images/Frame_1.png')
 
+        this.load.image('playerOne', './public/images/Frame_2.png')
+        this.load.image('playerTwo', './public/images/Frame_3.png')
+        
+        this.load.image('first', './public/images/Grocup_3.png')
+        this.load.image('second', './public/images/Group_3.png')
+        this.load.image('third', './public/images/Grouph_3.png')
+
+        this.load.image('minmax', './public/images/MinMax.png')
+        this.load.image('negamax', './public/images/NegaMax.png')
+        this.load.image('alfabeta', './public/images/AlfaBeta.png')
+        this.load.image('random', './public/images/Random.png')
+        
+        this.load.image('gl0', './public/images/Gl0.png')
+        this.load.image('gl1', './public/images/Gl1.png')
+        this.load.image('gl2', './public/images/Gl2.png')
+
+        this.load.image('start', './public/images/Start.png')
+        this.load.image('reset', './public/images/Reset.png')
+
+        this.load.image('firstWin', './public/images/one.png')
+        this.load.image('secondWin', './public/images/two.png')
+    }
 
     create()
     {
@@ -102,15 +101,29 @@ export default class Scene extends Phaser.Scene
             buttonDepthTwo.setTexture(this.depths[this.chosenDepths[1]])
         })
 
+
         let buttonStart = this.add.image(this.scale.baseSize.width/2, 105, 'start').setScale(0.5).setInteractive({ useHandCursor: true })
         buttonStart.on('pointerdown', () => {
             this.firstWin.setAlpha(0);
             this.secondWin.setAlpha(0);
             this.ResetMap();
             this.gameStarted = true;
-            buttonStart.setTexture("reset");
+            buttonReset.setVisible(true)
+            buttonStart.setVisible(false)
             if(this.aiCount === "two") this.AiMove();
          })
+
+         let buttonReset = this.add.image(this.scale.baseSize.width/2, 105, 'reset').setScale(0.5).setInteractive({ useHandCursor: true }).setVisible(false)
+         buttonReset.on('pointerdown', () => {
+            this.firstWin.setAlpha(0);
+            this.secondWin.setAlpha(0);
+            this.ResetMap();
+            this.gameStarted = false;
+            buttonStart.setVisible(true)
+            buttonReset.setVisible(false)
+          })
+
+
 
         let buttonOne = this.add.image(this.scale.baseSize.width/2 - 200, 35, 'first').setScale(0.5).setInteractive({ useHandCursor: true })
         buttonOne.on('pointerdown', () => {
@@ -119,6 +132,8 @@ export default class Scene extends Phaser.Scene
            buttonDepthOne.setVisible(false)
            buttonAlgorithmTwo.setVisible(false)
            buttonDepthTwo.setVisible(false)
+           buttonStart.setVisible(true)
+           buttonReset.setVisible(false)
            buttonStart.setTexture("start");
            this.firstWin.setAlpha(0);
            this.secondWin.setAlpha(0);
@@ -133,6 +148,8 @@ export default class Scene extends Phaser.Scene
             buttonDepthOne.setVisible(false)
             buttonAlgorithmTwo.setVisible(true)
             buttonDepthTwo.setVisible(true)
+            buttonStart.setVisible(true)
+            buttonReset.setVisible(false)
             buttonStart.setTexture("start");
             this.firstWin.setAlpha(0);
             this.secondWin.setAlpha(0);
@@ -146,6 +163,8 @@ export default class Scene extends Phaser.Scene
             buttonDepthOne.setVisible(true)
             buttonAlgorithmTwo.setVisible(true)
             buttonDepthTwo.setVisible(true)
+            buttonStart.setVisible(true)
+            buttonReset.setVisible(false)
             buttonStart.setTexture("start");
             this.firstWin.setAlpha(0);
             this.secondWin.setAlpha(0);
@@ -252,7 +271,7 @@ export default class Scene extends Phaser.Scene
                 copy = this.CopyBoard(this.map);
                 move = this.MinMax(copy, this.playerOne, depth)
                 x = move.cordinates.x
-                y = move.cordinates.y       
+                y = move.cordinates.y
                 break;
             case "negamax":
                 copy = this.CopyBoard(this.map);
@@ -291,6 +310,7 @@ export default class Scene extends Phaser.Scene
         let minMaxValue = sign ? Number.MIN_SAFE_INTEGER : Number.MAX_SAFE_INTEGER
         let nexIndex = 0
         
+
         for(let x = 0; x < this.mapX; x++)
         {
             for(let y = 0; y < this.mapY; y++)
@@ -305,7 +325,7 @@ export default class Scene extends Phaser.Scene
                     }
                     else
                     {
-                        score = this.EvalGameState(board, vertical)
+                        score = this.EvalGameState(board, vertical) * (sign ? 1 : -1 )
                     }
 
                     if((sign && score > minMaxValue) || (!sign && score < minMaxValue))
@@ -350,7 +370,7 @@ export default class Scene extends Phaser.Scene
                     }
                     else
                     {
-                        score = this.EvalGameState(board, vertical) * (sign ? 1 : -1 )
+                        score = this.EvalGameState(board, vertical) 
                     }
 
                     if(score > maxValue)
@@ -456,3 +476,13 @@ export default class Scene extends Phaser.Scene
     }
 
 }
+
+const config = {
+    type: Phaser.AUTO,
+    parent: 'phaser-example',
+    width: 800,
+    height: 600,
+    scene: MyGame
+};
+
+const game = new Phaser.Game(config);

@@ -1,3 +1,4 @@
-Uruchamianie projektu
-1. npm install
-2. npm run start
+Zbudowana gra dostępna pod adresem:
+https://stachue.itch.io/teoriagier
+Hasło:
+TeoriaGier2022
