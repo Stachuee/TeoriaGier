@@ -282,7 +282,7 @@ class MyGame extends Phaser.Scene
             break;
             case "alfabeta":
                 copy = this.CopyBoard(this.map);
-                move = this.AlfaBeta(copy, this.playerOne, depth + 1)
+                move = this.AlfaBetaStart(copy, this.playerOne, depth + 1)
                 console.log(move)
                 x = move.cordinates.x
                 y = move.cordinates.y       
@@ -404,7 +404,28 @@ class MyGame extends Phaser.Scene
         return {cordinates: moves[Math.floor(Math.random()*moves.length)], maxValue : -maxValue}
     }
 
-    AlfaBeta(board, vertical, depthRemain, sign = true, alpha = Number.MIN_SAFE_INTEGER, beta = Number.MAX_SAFE_INTEGER) // sign - true = +, sign - false = -
+    AlfaBetaStart(board, vertical, depthRemain, sign = true, alpha = Number.MIN_SAFE_INTEGER, beta = Number.MAX_SAFE_INTEGER)
+    {
+        let list = []
+        for(let x = 0; x < this.mapX; x++)
+        {
+            for(let y = 0; y < this.mapY; y++)
+            {
+                if(this.CheckIfCanPlace(vertical, board, x, y))
+                {
+                    this.MarkSpot(board, vertical, x, y)
+                    let value = this.AlfaBeta(board, !vertical, depthRemain - 1, !sign, alpha, beta)
+                    this.UnMarkSpot(board, vertical, x, y)
+                    alpha = alpha > value ? alpha : value
+                    list.push({value, cordinates: {x,y}})
+                }
+            }
+        }
+        list.sort((a,b) => b.value - a.value)
+        return list[0]; 
+    }
+
+    AlfaBeta(board, vertical, depthRemain, sign = true, alpha, beta) // sign - true = +, sign - false = -
     {
         if(depthRemain > 0) {
             if(sign)
@@ -449,6 +470,52 @@ class MyGame extends Phaser.Scene
         }
     }
 
+/*
+    AlfaBeta(board, vertical, depthRemain, sign = true, alpha = {value : Number.MIN_SAFE_INTEGER, cordinates :{x:0,y:0}}, beta = {value :Number.MAX_SAFE_INTEGER, cordinates :{x:0,y:0}}) // sign - true = +, sign - false = -
+    {
+        if(depthRemain > 0) {
+            if(sign)
+            {
+                for(let x = 0; x < this.mapX; x++)
+                {
+                    for(let y = 0; y < this.mapY; y++)
+                    {
+                        if(this.CheckIfCanPlace(vertical, board, x, y))
+                        {
+                            this.MarkSpot(board, vertical, x, y)
+                            let value = this.AlfaBeta(board, !vertical, depthRemain - 1, !sign, alpha, beta)
+                            this.UnMarkSpot(board, vertical, x, y)
+                            alpha = alpha.value > value.value ? alpha : {value : value.value, cordinates :{x,y}}
+                            if (alpha.value >= beta.value) return beta
+                        }
+                    }   
+                }
+            }
+            else 
+            {   
+                for(let x = 0; x < this.mapX; x++)
+                {
+                    for(let y = 0; y < this.mapY; y++)
+                    {
+                        if(this.CheckIfCanPlace(vertical, board, x, y))
+                        {
+                            this.MarkSpot(board, vertical, x, y)
+                            let value = this.AlfaBeta(board, !vertical, depthRemain - 1, !sign, alpha, beta)
+                            this.UnMarkSpot(board, vertical, x, y)
+                            beta = beta.value < value.value ? beta : {value : value.value, cordinates :{x,y}}
+                            if (alpha.value >= beta.value) return alpha
+                        }
+                    }   
+                }
+                return beta
+            }
+        } 
+        else {
+            return {value : this.EvalGameState(board, vertical) * (sign ? 1 : -1 ), cordinates :{x:0,y:0}}
+            //return this.EvalGameState(board, vertical) * (sign ? 1 : -1 )
+        }
+    }*/
+
     MarkSpot(board, vertical, x, y)
     {
         board[x][y].isFilled = true
@@ -478,6 +545,8 @@ class MyGame extends Phaser.Scene
     evalCount = 0;
     EvalGameState(board, vertical)
     {
+        this.evalCount++;
+        
         let oponentMoves = this.CheckHowManyMovesPossible(!vertical, board)
         if(oponentMoves === 0) return Number.MAX_SAFE_INTEGER
         else return this.CheckHowManyMovesPossible(vertical, board) - oponentMoves;
