@@ -1,3 +1,4 @@
+import { apply } from 'file-loader';
 import Phaser from 'phaser';
 //import logoImg from './assets/logo.png';
 
@@ -61,7 +62,7 @@ class MyGame extends Phaser.Scene
 
     chosenAlgorithm = [0, 0]
     chosenDepths = [0, 0]
-    algorithms = ["minmax", "negamax", "random"]
+    algorithms = ["minmax", "negamax", "alfabeta", "random"]
     depths = ["gl0", "gl1", "gl2"]
     gameStarted = false
     
@@ -279,6 +280,13 @@ class MyGame extends Phaser.Scene
                 x = move.cordinates.x
                 y = move.cordinates.y       
             break;
+            case "alfabeta":
+                copy = this.CopyBoard(this.map);
+                move = this.AlfaBeta(copy, this.playerOne, depth + 1)
+                console.log(move)
+                x = move.cordinates.x
+                y = move.cordinates.y       
+            break;
             case "random":
                 do {
                     x = Phaser.Math.Between(0, this.mapX - 1);
@@ -286,6 +294,8 @@ class MyGame extends Phaser.Scene
                 } while(!this.CheckIfCanPlace(this.playerOne, this.map, x, y))
                 break;
         }
+        console.log(algorithm + ": " + this.evalCount)
+        this.evalCount = 0 
         this.PlaceBlock(this.playerOne, x, y);
         this.PlayerSwap();
     }   
@@ -394,6 +404,51 @@ class MyGame extends Phaser.Scene
         return {cordinates: moves[Math.floor(Math.random()*moves.length)], maxValue : -maxValue}
     }
 
+    AlfaBeta(board, vertical, depthRemain, sign = true, alpha = Number.MIN_SAFE_INTEGER, beta = Number.MAX_SAFE_INTEGER) // sign - true = +, sign - false = -
+    {
+        if(depthRemain > 0) {
+            if(sign)
+            {
+                for(let x = 0; x < this.mapX; x++)
+                {
+                    for(let y = 0; y < this.mapY; y++)
+                    {
+                        if(this.CheckIfCanPlace(vertical, board, x, y))
+                        {
+                            this.MarkSpot(board, vertical, x, y)
+                            let value = this.AlfaBeta(board, !vertical, depthRemain - 1, !sign, alpha, beta)
+                            this.UnMarkSpot(board, vertical, x, y)
+                            alpha = alpha > value ? alpha : value
+                            if (alpha >= beta) return beta
+                        }
+                    }   
+                }
+                return alpha
+            }
+            else 
+            {
+                for(let x = 0; x < this.mapX; x++)
+                {
+                    for(let y = 0; y < this.mapY; y++)
+                    {
+                        if(this.CheckIfCanPlace(vertical, board, x, y))
+                        {
+                            this.MarkSpot(board, vertical, x, y)
+                            let value = this.AlfaBeta(board, !vertical, depthRemain - 1, !sign, alpha, beta)
+                            this.UnMarkSpot(board, vertical, x, y)
+                            beta = beta < value ? beta : value
+                            if (alpha >= beta) return alpha
+                        }
+                    }   
+                }
+                return beta
+            }
+        } 
+        else {
+            return this.EvalGameState(board, vertical) * (sign ? 1 : -1 )
+        }
+    }
+
     MarkSpot(board, vertical, x, y)
     {
         board[x][y].isFilled = true
@@ -420,7 +475,7 @@ class MyGame extends Phaser.Scene
         }
     }
 
-
+    evalCount = 0;
     EvalGameState(board, vertical)
     {
         let oponentMoves = this.CheckHowManyMovesPossible(!vertical, board)
