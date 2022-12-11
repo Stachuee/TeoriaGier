@@ -25,6 +25,7 @@ class MyGame extends Phaser.Scene
         this.load.image('negamax', './public/images/NegaMax.png')
         this.load.image('alfabeta', './public/images/AlfaBeta.png')
         this.load.image('random', './public/images/Random.png')
+        this.load.image('montecarlo', './public/images/Random.png')
         
         this.load.image('gl0', './public/images/Gl0.png')
         this.load.image('gl1', './public/images/Gl1.png')
@@ -62,7 +63,7 @@ class MyGame extends Phaser.Scene
 
     chosenAlgorithm = [0, 0]
     chosenDepths = [0, 0]
-    algorithms = ["minmax", "negamax", "alfabeta", "random"]
+    algorithms = ["minmax","montecarlo", "negamax", "alfabeta", "random"]
     depths = ["gl0", "gl1", "gl2"]
     gameStarted = false
     
@@ -283,10 +284,15 @@ class MyGame extends Phaser.Scene
             case "alfabeta":
                 copy = this.CopyBoard(this.map);
                 move = this.AlfaBetaStart(copy, this.playerOne, depth + 1)
-                console.log(move)
                 x = move.cordinates.x
                 y = move.cordinates.y       
             break;
+            case "montecarlo":
+                copy = this.CopyBoard(this.map);
+                move = this.MonteCarloEvaluation(copy, this.playerOne, 300)
+                x = move.cordinates.x
+                y = move.cordinates.y     
+                break;
             case "random":
                 do {
                     x = Phaser.Math.Between(0, this.mapX - 1);
@@ -294,7 +300,7 @@ class MyGame extends Phaser.Scene
                 } while(!this.CheckIfCanPlace(this.playerOne, this.map, x, y))
                 break;
         }
-        console.log(algorithm + ": " + this.evalCount)
+        //console.log(algorithm + ": " + this.evalCount)
         this.evalCount = 0 
         this.PlaceBlock(this.playerOne, x, y);
         this.PlayerSwap();
@@ -515,6 +521,49 @@ class MyGame extends Phaser.Scene
             //return this.EvalGameState(board, vertical) * (sign ? 1 : -1 )
         }
     }*/
+
+
+    MonteCarloEvaluation(board, vertical, noOfSimulations)
+    {
+        let bestmove = {x: 0, y:0}
+        let bestPropability = -1
+
+        for(let x = 0; x < this.mapX; x++)
+        {
+            for(let y = 0; y < this.mapY; y++)
+            {
+                if(!this.CheckIfCanPlace(vertical, board, x, y)) continue;
+
+                this.MarkSpot(board, vertical, x, y)
+                let successes = 0
+                for(let count = 0; count < noOfSimulations; count++)
+                {
+                    let copy = this.CopyBoard(board)
+                    let move = {x, y}
+                    let nextPlayer = vertical
+                    while(this.CheckHowManyMovesPossible(!nextPlayer, copy) != 0)
+                    {
+                        nextPlayer = !nextPlayer
+                        do {
+                            move.x = Phaser.Math.Between(0, this.mapX - 1);
+                            move.y = Phaser.Math.Between(0, this.mapY - 1); 
+                        } while(!this.CheckIfCanPlace(nextPlayer, copy, move.x, move.y))    
+                        this.MarkSpot(copy, nextPlayer, move.x, move.y)
+                    }
+                    if(nextPlayer == vertical) successes++
+                }
+                let propability = successes / noOfSimulations
+                if(bestPropability < propability)
+                {
+                    bestPropability = propability
+                    bestmove = {x, y}
+                }
+                this.UnMarkSpot(board, vertical, x, y)
+            }
+        }
+        return {cordinates: {x : bestmove.x, y : bestmove.y}}
+    }
+
 
     MarkSpot(board, vertical, x, y)
     {
