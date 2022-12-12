@@ -25,7 +25,7 @@ class MyGame extends Phaser.Scene
         this.load.image('negamax', './public/images/NegaMax.png')
         this.load.image('alfabeta', './public/images/AlfaBeta.png')
         this.load.image('random', './public/images/Random.png')
-        this.load.image('montecarlo', './public/images/Random.png')
+        this.load.image('montecarlo', './public/images/MonteCarlo.png')
         
         this.load.image('gl0', './public/images/Gl0.png')
         this.load.image('gl1', './public/images/Gl1.png')
@@ -63,7 +63,7 @@ class MyGame extends Phaser.Scene
 
     chosenAlgorithm = [0, 0]
     chosenDepths = [0, 0]
-    algorithms = ["minmax","montecarlo", "negamax", "alfabeta", "random"]
+    algorithms = [{algorithm : "minmax", useDepth : true}, {algorithm : "negamax", useDepth : true}, {algorithm : "alfabeta", useDepth : true}, {algorithm : "montecarlo", useDepth : false}, {algorithm :  "random", useDepth : false}]
     depths = ["gl0", "gl1", "gl2"]
     gameStarted = false
     
@@ -75,7 +75,8 @@ class MyGame extends Phaser.Scene
             if(this.gameStarted) return
             if(this.chosenAlgorithm[0] < this.algorithms.length - 1) this.chosenAlgorithm[0]++
             else this.chosenAlgorithm[0] = 0
-            buttonAlgorithmOne.setTexture(this.algorithms[this.chosenAlgorithm[0]])
+            buttonAlgorithmOne.setTexture(this.algorithms[this.chosenAlgorithm[0]].algorithm)
+            buttonDepthOne.setVisible(this.algorithms[this.chosenAlgorithm[0]].useDepth)
         })
         let buttonDepthOne = this.add.image(this.scale.baseSize.width/2- 200, 105, 'gl0').setScale(0.5).setInteractive({ useHandCursor: true }).setVisible(false)
         buttonDepthOne.on('pointerdown', () => {
@@ -91,7 +92,8 @@ class MyGame extends Phaser.Scene
             if(this.gameStarted) return
             if(this.chosenAlgorithm[1] < this.algorithms.length - 1) this.chosenAlgorithm[1]++
             else this.chosenAlgorithm[1] = 0
-            buttonAlgorithmTwo.setTexture(this.algorithms[this.chosenAlgorithm[1]])
+            buttonAlgorithmTwo.setTexture(this.algorithms[this.chosenAlgorithm[1]].algorithm)
+            buttonDepthTwo.setVisible(this.algorithms[this.chosenAlgorithm[1]].useDepth)
         })
         
         let buttonDepthTwo = this.add.image(this.scale.baseSize.width/2 + 200, 105, 'gl0').setScale(0.5).setInteractive({ useHandCursor: true }).setVisible(false)
@@ -149,7 +151,7 @@ class MyGame extends Phaser.Scene
             buttonAlgorithmOne.setVisible(false)
             buttonDepthOne.setVisible(false)
             buttonAlgorithmTwo.setVisible(true)
-            buttonDepthTwo.setVisible(true)
+            buttonDepthTwo.setVisible(this.algorithms[this.chosenAlgorithm[1]].useDepth)
             buttonStart.setVisible(true)
             buttonReset.setVisible(false)
             buttonStart.setTexture("start");
@@ -162,9 +164,9 @@ class MyGame extends Phaser.Scene
         buttonThree.on('pointerdown', () => {
             this.aiCount = 'two';
             buttonAlgorithmOne.setVisible(true)
-            buttonDepthOne.setVisible(true)
+            buttonDepthOne.setVisible(this.algorithms[this.chosenAlgorithm[0]].useDepth)
             buttonAlgorithmTwo.setVisible(true)
-            buttonDepthTwo.setVisible(true)
+            buttonDepthTwo.setVisible(this.algorithms[this.chosenAlgorithm[1]].useDepth)
             buttonStart.setVisible(true)
             buttonReset.setVisible(false)
             buttonStart.setTexture("start");
@@ -251,11 +253,11 @@ class MyGame extends Phaser.Scene
             this.gameStarted = false
             return;
         }
-        if(this.aiCount === "one" && !this.playerOne) this.move = setTimeout(() => this.AiMove(this.algorithms[this.chosenAlgorithm[1]], this.chosenDepths[1]), 1);
+        if(this.aiCount === "one" && !this.playerOne) this.move = setTimeout(() => this.AiMove(this.algorithms[this.chosenAlgorithm[1]].algorithm, this.chosenDepths[1]), 1);
         else if(this.aiCount === "two")
         {
-            if(this.playerOne)  this.move = setTimeout(() => this.AiMove(this.algorithms[this.chosenAlgorithm[0]], this.chosenDepths[0]), 1);
-            else  this.move = setTimeout(() => this.AiMove(this.algorithms[this.chosenAlgorithm[1]], this.chosenDepths[1]), 1);
+            if(this.playerOne)  this.move = setTimeout(() => this.AiMove(this.algorithms[this.chosenAlgorithm[0]].algorithm, this.chosenDepths[0]), 1);
+            else  this.move = setTimeout(() => this.AiMove(this.algorithms[this.chosenAlgorithm[1]].algorithm, this.chosenDepths[1]), 1);
         }
     }
 
@@ -541,13 +543,16 @@ class MyGame extends Phaser.Scene
                     let copy = this.CopyBoard(board)
                     let move = {x, y}
                     let nextPlayer = vertical
-                    while(this.CheckHowManyMovesPossible(!nextPlayer, copy) != 0)
+                    let moves 
+                    while((moves = this.GetMovesCountAndRandomMove(!nextPlayer, copy)).numberOfAvalibleMoves != 0)
                     {
                         nextPlayer = !nextPlayer
+                        move = moves.move
+                        /*
                         do {
                             move.x = Phaser.Math.Between(0, this.mapX - 1);
                             move.y = Phaser.Math.Between(0, this.mapY - 1); 
-                        } while(!this.CheckIfCanPlace(nextPlayer, copy, move.x, move.y))    
+                        } while(!this.CheckIfCanPlace(nextPlayer, copy, move.x, move.y))    */
                         this.MarkSpot(copy, nextPlayer, move.x, move.y)
                     }
                     if(nextPlayer == vertical) successes++
@@ -564,6 +569,24 @@ class MyGame extends Phaser.Scene
         return {cordinates: {x : bestmove.x, y : bestmove.y}}
     }
 
+
+    GetMovesCountAndRandomMove(vertical, board)
+    {
+        let numberOfAvalibleMoves = 0;
+        let move
+
+        for(let y = 0; y < this.mapY; y++)
+        {
+            for(let x = 0; x < this.mapX; x++)
+            {
+                if(this.CheckIfCanPlace(vertical, board, x, y)){
+                    numberOfAvalibleMoves++;
+                    if(Math.random() < 1 / numberOfAvalibleMoves) move = {x, y}
+                } 
+            }
+        }
+        return {numberOfAvalibleMoves, move};
+    }
 
     MarkSpot(board, vertical, x, y)
     {
