@@ -26,6 +26,7 @@ class MyGame extends Phaser.Scene
         this.load.image('alfabeta', './public/images/AlfaBeta.png')
         this.load.image('random', './public/images/Random.png')
         this.load.image('montecarlo', './public/images/MonteCarlo.png')
+        this.load.image('montecarlotree', './public/images/MonteCarlo.png')
         
         this.load.image('gl0', './public/images/Gl0.png')
         this.load.image('gl1', './public/images/Gl1.png')
@@ -63,7 +64,7 @@ class MyGame extends Phaser.Scene
 
     chosenAlgorithm = [0, 0]
     chosenDepths = [0, 0]
-    algorithms = [{algorithm : "minmax", useDepth : true}, {algorithm : "negamax", useDepth : true}, {algorithm : "alfabeta", useDepth : true}, {algorithm : "montecarlo", useDepth : false}, {algorithm :  "random", useDepth : false}]
+    algorithms = [{algorithm : "minmax", useDepth : true}, {algorithm : "negamax", useDepth : true}, {algorithm : "alfabeta", useDepth : true}, {algorithm : "montecarlo", useDepth : false}, {algorithm : "montecarlotree", useDepth : false}, {algorithm :  "random", useDepth : false}]
     depths = ["gl0", "gl1", "gl2"]
     gameStarted = false
     
@@ -294,6 +295,12 @@ class MyGame extends Phaser.Scene
                 move = this.MonteCarloEvaluation(copy, this.playerOne, 300)
                 x = move.cordinates.x
                 y = move.cordinates.y     
+                break;
+            case "montecarlotree":
+                let copy = this.CopyBoard(this.map);
+                move = this.MonteCarloTreeSearch(this.playerOne, copy, 10000);
+                x = move.cordinates.x
+                y = move.cordinates.y 
                 break;
             case "random":
                 do {
@@ -566,6 +573,215 @@ class MyGame extends Phaser.Scene
                 this.UnMarkSpot(board, vertical, x, y)
             }
         }
+        return {cordinates: {x : bestmove.x, y : bestmove.y}}
+    }
+
+
+    MonteCarloTreeSearch(vertical, board, iterationsToGo)
+    {
+        let iterations = 0;
+        let BaseNode =
+        {
+            base : true,
+            closed : false,
+            childrens : [],
+            parrent : null,
+            myMove : {x:0, y:0},
+            nextIndex : {x:0, y:0},
+            mapSize : {x: this.mapX, y : this.mapY},
+            vertical : null,
+            maximalizeFor : null,
+            wins : 0,
+            games : 0,
+            
+            Innit: function(currentPlayer, maximalizeFor, board, x, y, parrent, child = true)
+            {
+                this.vertical = currentPlayer
+                this.maximalizeFor = maximalizeFor
+                this.myMove = {x,y}
+                this.parrent = parrent
+                this.childrens = []
+                this.wins = 0
+                this.games = 0
+                this.nextIndex = {x:0,y:0}
+                this.closed = false
+                this.base = !child
+
+                if(child)
+                {
+                    this.PlayBoard(currentPlayer, board);
+                }
+            },
+
+            Step: function(board)
+            {
+                if(!this.closed)
+                {
+                    while(!this.CheckIfCanPlace(this.currentPlayer, board, this.nextIndex.x, this.nextIndex.y))
+                    {
+                        this.GetNextIndex();
+                        if(this.closed) 
+                        {
+                            this.ExploreDeeper(board)
+                            return;
+                        }
+                    }
+                    let newObj = Object.create(BaseNode)
+                    newObj.Innit(!this.vertical, this.maximalizeFor, board, this.nextIndex.x, this.nextIndex.y, this);
+                    this.childrens.push(newObj);
+                    this.GetNextIndex();
+                }
+                else
+                {
+                    this.ExploreDeeper(board)
+                }
+            },
+
+            ExploreDeeper : function(board)
+            {
+                if(!this.base)
+                {
+                    this.MarkSpot(board, this.currentPlayer, this.myMove.x, this.myMove.y)
+                } 
+                let nextToExplore = {score : -1, toExplore : null}
+
+                this.childrens.forEach(element => {
+                    let childValue = element.wins / element.games + Math.SQRT2 * Math.log(iterations) / element.games
+                    if(childValue > nextToExplore.score)
+                    {
+                        nextToExplore.score = childValue
+                        nextToExplore.toExplore = element
+                    }
+                });
+                if(nextToExplore.score != -1) 
+                {
+                    nextToExplore.toExplore.Step(board)
+                }
+                else if(this.currentPlayer == this.maximalizeFor)
+                {
+                    this.PropagateWins(true);
+                }
+                else
+                {
+                    this.PropagateWins(false);
+                }
+
+                if(!this.base) this.UnMarkSpot(board, this.currentPlayer, this.myMove.x, this.myMove.y)
+            },
+
+            GetNextIndex : function()
+            {
+                this.nextIndex.x++
+                if(this.nextIndex.x >= this.mapSize.x)
+                {
+                    this.nextIndex.x = 0
+                    this.nextIndex.y++
+                    if(this.nextIndex.y >= this.mapSize.y)
+                    {
+                        this.closed = true
+                    }
+                }
+                //console.log(this.nextIndex)
+            },
+
+            PlayBoard : function(vertical, board)
+            {
+                let nextPlayer = vertical
+                let moves 
+                while((moves = this.GetMovesCountAndRandomMove(!nextPlayer, board)).numberOfAvalibleMoves != 0)
+                {
+                    nextPlayer = !nextPlayer
+                    let move = moves.move
+                    this.MarkSpot(board, nextPlayer, move.x, move.y)
+                }
+                if(nextPlayer == this.maximalizeFor) this.PropagateWins(true)
+                else this.PropagateWins(false)
+            },
+
+            CheckIfCanPlace: function(vertical, map, x, y)
+            {
+                if(vertical)
+                {
+                    if(!map[x][y].isFilled&& y < this.mapSize.y - 1 && !map[x][y + 1].isFilled) return true;
+                    return false;
+                }
+                else
+                {
+                    if(!map[x][y].isFilled&& x < this.mapSize.x - 1 && !map[x + 1][y].isFilled) return true;
+                    return false;
+                }
+            },
+            MarkSpot : function(board, vertical, x, y)
+            {
+                board[x][y].isFilled = true
+                if(vertical)
+                {
+                    board[x][y + 1].isFilled= true
+                }
+                else
+                {
+                    board[x + 1][y].isFilled = true
+                }
+            },
+            UnMarkSpot : function(board, vertical, x, y)
+            {
+                board[x][y].isFilled = false
+                if(vertical)
+                {
+                    board[x][y + 1].isFilled= false
+                }
+                else
+                {
+                    board[x + 1][y].isFilled = false
+                }
+            },
+            GetMovesCountAndRandomMove : function(vertical, board)
+            {
+                let numberOfAvalibleMoves = 0;
+                let move
+        
+                for(let y = 0; y < this.mapSize.y; y++)
+                {
+                    for(let x = 0; x < this.mapSize.x; x++)
+                    {
+                        if(this.CheckIfCanPlace(vertical, board, x, y)){
+                            numberOfAvalibleMoves++;
+                            if(Math.random() < 1 / numberOfAvalibleMoves) move = {x, y}
+                        } 
+                    }
+                }
+                return {numberOfAvalibleMoves, move};
+            },
+            PropagateWins : function(win)
+            {
+                if(win) this.wins++
+                this.games++
+                if(!this.base)this.parrent.PropagateWins(win)
+            },
+            GetBestMove()
+            {
+                let nextToExplore = {score : -1, toExplore : null}
+
+                this.childrens.forEach(element => {
+                    if(element.wins / element.games > nextToExplore.score)
+                    {
+                        nextToExplore.score = element.wins / element.games
+                        nextToExplore.toExplore = element
+                    }
+                });
+
+                return nextToExplore.toExplore.myMove
+            }
+        }
+
+        let newObj = Object.create(BaseNode)
+        newObj.Innit(vertical, vertical, board, -1, -1, null, false);
+        for(let i = 0; i < iterationsToGo; i++){
+            iterations++
+            let copy = this.CopyBoard(board);
+            newObj.Step(copy);
+        }
+        let bestmove = newObj.GetBestMove()
         return {cordinates: {x : bestmove.x, y : bestmove.y}}
     }
 
