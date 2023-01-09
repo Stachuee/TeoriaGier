@@ -26,7 +26,7 @@ class MyGame extends Phaser.Scene
         this.load.image('alfabeta', './public/images/AlfaBeta.png')
         this.load.image('random', './public/images/Random.png')
         this.load.image('montecarlo', './public/images/MonteCarlo.png')
-        this.load.image('montecarlotree', './public/images/MonteCarlo.png')
+        this.load.image('montecarlotree', './public/images/MonteCarloTree.png')
         
         this.load.image('gl0', './public/images/Gl0.png')
         this.load.image('gl1', './public/images/Gl1.png')
@@ -646,7 +646,7 @@ class MyGame extends Phaser.Scene
                 let nextToExplore = {score : -1, toExplore : null}
 
                 this.childrens.forEach(element => {
-                    let childValue = element.wins / element.games + Math.SQRT2 * Math.log(iterations) / element.games
+                    let childValue = element.wins / element.games + 0.4 * Math.log(iterations) / element.games
                     if(childValue > nextToExplore.score)
                     {
                         nextToExplore.score = childValue
